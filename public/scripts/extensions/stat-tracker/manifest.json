@@ -1,0 +1,13 @@
+{
+    "display_name": "stat-tracker",
+    "loading_order": 9,
+    "requires": [],
+    "optional": [
+        "stat-tracker"
+    ],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "galasal",
+    "version": "1.0.0",
+    "homePage": "https://github.com/SillyTavern/SillyTavern"
+}
