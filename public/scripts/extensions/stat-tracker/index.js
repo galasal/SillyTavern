@@ -24,6 +24,7 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { resolveVariable } from '../../variables.js';
+import { extractStatsFromResponse, testObject } from './statTracker.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'stat_tracker';
@@ -92,6 +93,8 @@ const defaultSettings = {
     maxMessagesPerRequestStep: 1,
     prompt_builder: prompt_builders.DEFAULT,
 };
+
+
 
 function loadSettings() {
     if(!extension_settings.statTracker) {
@@ -650,6 +653,7 @@ function reinsertMemory() {
  * @param {number|null} index Index of the chat message to save the summary to. If null, the pre-last message is used.
  */
 function setMemoryContext(value, saveToMessage, index = null) {
+    console.log(extractStatsFromResponse(testObject, value)); //TODO::remove this when done testing
     const context = getContext();
     context.setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_settings.statTracker.position, extension_settings.statTracker.depth, false, extension_settings.statTracker.role);
     $('#memory_contents').val(value);
