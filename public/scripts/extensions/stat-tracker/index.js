@@ -671,17 +671,17 @@ function setMemoryContext(value, saveToMessage, index = null) {
 function doPopout(e) {
     const target = e.target;
     //repurposes the zoomed avatar template to server as a floating div
-    if ($('#summaryExtensionPopout').length === 0) {
+    if ($('#statTrackerExtensionPopout').length === 0) {
         console.debug('did not see popout yet, creating');
         const originalHTMLClone = $(target).parent().parent().parent().find('.inline-drawer-content').html();
         const originalElement = $(target).parent().parent().parent().find('.inline-drawer-content');
         const template = $('#zoomed_avatar_template').html();
         const controlBarHtml = `<div class="panelControlBar flex-container">
-        <div id="summaryExtensionPopoutheader" class="fa-solid fa-grip drag-grabber hoverglow"></div>
-        <div id="summaryExtensionPopoutClose" class="fa-solid fa-circle-xmark hoverglow dragClose"></div>
+        <div id="statTrackerExtensionPopoutheader" class="fa-solid fa-grip drag-grabber hoverglow"></div>
+        <div id="statTrackerExtensionPopoutClose" class="fa-solid fa-circle-xmark hoverglow dragClose"></div>
     </div>`;
         const newElement = $(template);
-        newElement.attr('id', 'summaryExtensionPopout')
+        newElement.attr('id', 'statTrackerExtensionPopout')
             .removeClass('zoomed_avatar')
             .addClass('draggable')
             .empty();
@@ -690,29 +690,29 @@ function doPopout(e) {
         originalElement.html('<div class="flex-container alignitemscenter justifyCenter wide100p"><small>Currently popped out</small></div>');
         newElement.append(controlBarHtml).append(originalHTMLClone);
         $('body').append(newElement);
-        $('#summaryExtensionDrawerContents').addClass('scrollableInnerFull');
+        $('#statTrackerExtensionDrawerContents').addClass('scrollableInnerFull');
         setMemoryContext(prevSummaryBoxContents, false); //paste prev summary box contents into popout box
         setupListeners();
         loadSettings();
         loadMovingUIState();
 
-        $('#summaryExtensionPopout').fadeIn(animation_duration);
+        $('#statTrackerExtensionPopout').fadeIn(animation_duration);
         dragElement(newElement);
 
         //setup listener for close button to restore extensions menu
-        $('#summaryExtensionPopoutClose').off('click').on('click', function () {
-            $('#summaryExtensionDrawerContents').removeClass('scrollableInnerFull');
-            const summaryPopoutHTML = $('#summaryExtensionDrawerContents');
-            $('#summaryExtensionPopout').fadeOut(animation_duration, () => {
+        $('#statTrackerExtensionPopoutClose').off('click').on('click', function () {
+            $('#statTrackerExtensionDrawerContents').removeClass('scrollableInnerFull');
+            const summaryPopoutHTML = $('#statTrackerExtensionDrawerContents');
+            $('#statTrackerExtensionPopout').fadeOut(animation_duration, () => {
                 originalElement.empty();
                 originalElement.html(summaryPopoutHTML);
-                $('#summaryExtensionPopout').remove();
+                $('#statTrackerExtensionPopout').remove();
             });
             loadSettings();
         });
     } else {
         console.debug('saw existing popout, removing');
-        $('#summaryExtensionPopout').fadeOut(animation_duration, () => { $('#summaryExtensionPopoutClose').trigger('click'); });
+        $('#statTrackerExtensionPopout').fadeOut(animation_duration, () => { $('#statTrackerExtensionPopoutClose').trigger('click'); });
     }
 }
 
@@ -750,7 +750,7 @@ jQuery(async function () {
         const settingsHtml = await renderExtensionTemplateAsync(extensionName, 'settings', { defaultSettings });
         $('#extensions_settings2').append(settingsHtml);
         setupListeners();
-        $('#summaryExtensionPopoutButton').off('click').on('click', function (e) {
+        $('#statTrackerExtensionPopoutButton').off('click').on('click', function (e) {
             doPopout(e);
             e.stopPropagation();
         });
