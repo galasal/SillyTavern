@@ -43,8 +43,8 @@ const formatMemoryValue = function (value) {
 
     value = value.trim();
 
-    if (extension_settings.memory.template) {
-        let result = extension_settings.memory.template.replace(/{{summary}}/i, value);
+    if (extension_settings.statTracker.template) {
+        let result = extension_settings.statTracker.template.replace(/{{summary}}/i, value);
         return substituteParams(result);
     } else {
         return `Summary: ${value}`;
@@ -94,34 +94,37 @@ const defaultSettings = {
 };
 
 function loadSettings() {
-    if (Object.keys(extension_settings.memory).length === 0) {
-        Object.assign(extension_settings.memory, defaultSettings);
+    if(!extension_settings.statTracker) {
+        extension_settings.statTracker = {};
+    }
+    if (Object.keys(extension_settings.statTracker).length === 0) {
+        Object.assign(extension_settings.statTracker, defaultSettings);
     }
 
     for (const key of Object.keys(defaultSettings)) {
-        if (extension_settings.memory[key] === undefined) {
-            extension_settings.memory[key] = defaultSettings[key];
+        if (extension_settings.statTracker[key] === undefined) {
+            extension_settings.statTracker[key] = defaultSettings[key];
         }
     }
 
-    $('#memory_frozen').prop('checked', extension_settings.memory.memoryFrozen).trigger('input');
-    $('#memory_skipWIAN').prop('checked', extension_settings.memory.SkipWIAN).trigger('input');
-    $('#memory_prompt').val(extension_settings.memory.prompt).trigger('input');
-    $('#memory_prompt_words').val(extension_settings.memory.promptWords).trigger('input');
-    $('#memory_prompt_interval').val(extension_settings.memory.promptInterval).trigger('input');
-    $('#memory_template').val(extension_settings.memory.template).trigger('input');
-    $('#memory_depth').val(extension_settings.memory.depth).trigger('input');
-    $('#memory_role').val(extension_settings.memory.role).trigger('input');
-    $(`input[name="memory_position"][value="${extension_settings.memory.position}"]`).prop('checked', true).trigger('input');
-    $('#memory_prompt_words_force').val(extension_settings.memory.promptForceWords).trigger('input');
-    $(`input[name="memory_prompt_builder"][value="${extension_settings.memory.prompt_builder}"]`).prop('checked', true).trigger('input');
-    $('#memory_override_response_length').val(extension_settings.memory.overrideResponseLength).trigger('input');
-    $('#memory_max_messages_per_request').val(extension_settings.memory.maxMessagesPerRequest).trigger('input');
+    $('#memory_frozen').prop('checked', extension_settings.statTracker.memoryFrozen).trigger('input');
+    $('#memory_skipWIAN').prop('checked', extension_settings.statTracker.SkipWIAN).trigger('input');
+    $('#memory_prompt').val(extension_settings.statTracker.prompt).trigger('input');
+    $('#memory_prompt_words').val(extension_settings.statTracker.promptWords).trigger('input');
+    $('#memory_prompt_interval').val(extension_settings.statTracker.promptInterval).trigger('input');
+    $('#memory_template').val(extension_settings.statTracker.template).trigger('input');
+    $('#memory_depth').val(extension_settings.statTracker.depth).trigger('input');
+    $('#memory_role').val(extension_settings.statTracker.role).trigger('input');
+    $(`input[name="memory_position"][value="${extension_settings.statTracker.position}"]`).prop('checked', true).trigger('input');
+    $('#memory_prompt_words_force').val(extension_settings.statTracker.promptForceWords).trigger('input');
+    $(`input[name="memory_prompt_builder"][value="${extension_settings.statTracker.prompt_builder}"]`).prop('checked', true).trigger('input');
+    $('#memory_override_response_length').val(extension_settings.statTracker.overrideResponseLength).trigger('input');
+    $('#memory_max_messages_per_request').val(extension_settings.statTracker.maxMessagesPerRequest).trigger('input');
 }
 
 async function onPromptForceWordsAutoClick() {
     const context = getContext();
-    const maxPromptLength = getMaxContextSize(extension_settings.memory.overrideResponseLength);
+    const maxPromptLength = getMaxContextSize(extension_settings.statTracker.overrideResponseLength);
     const chat = context.chat;
     const allMessages = chat.filter(m => !m.is_system && m.mes).map(m => m.mes);
     const messagesWordCount = allMessages.map(m => extractAllWords(m)).flat().length;
@@ -132,10 +135,10 @@ async function onPromptForceWordsAutoClick() {
     // How many words should pass so that messages will start be dropped out of context;
     const wordsPerPrompt = Math.floor(maxPromptLength / tokensPerWord);
     // How many words will be needed to fit the allowance buffer
-    const summaryPromptWords = extractAllWords(extension_settings.memory.prompt).length;
-    const promptAllowanceWords = maxPromptLengthWords - extension_settings.memory.promptWords - summaryPromptWords;
+    const summaryPromptWords = extractAllWords(extension_settings.statTracker.prompt).length;
+    const promptAllowanceWords = maxPromptLengthWords - extension_settings.statTracker.promptWords - summaryPromptWords;
     const averageMessagesPerPrompt = Math.floor(promptAllowanceWords / averageMessageWordCount);
-    const maxMessagesPerSummary = extension_settings.memory.maxMessagesPerRequest || 0;
+    const maxMessagesPerSummary = extension_settings.statTracker.maxMessagesPerRequest || 0;
     const targetMessagesInPrompt = maxMessagesPerSummary > 0 ? maxMessagesPerSummary : Math.max(0, averageMessagesPerPrompt);
     const targetSummaryWords = (targetMessagesInPrompt * averageMessageWordCount) + (promptAllowanceWords / 4);
 
@@ -153,23 +156,23 @@ async function onPromptForceWordsAutoClick() {
     });
 
     const ROUNDING = 100;
-    extension_settings.memory.promptForceWords = Math.max(1, Math.floor(targetSummaryWords / ROUNDING) * ROUNDING);
-    $('#memory_prompt_words_force').val(extension_settings.memory.promptForceWords).trigger('input');
+    extension_settings.statTracker.promptForceWords = Math.max(1, Math.floor(targetSummaryWords / ROUNDING) * ROUNDING);
+    $('#memory_prompt_words_force').val(extension_settings.statTracker.promptForceWords).trigger('input');
 }
 
 async function onPromptIntervalAutoClick() {
     const context = getContext();
-    const maxPromptLength = getMaxContextSize(extension_settings.memory.overrideResponseLength);
+    const maxPromptLength = getMaxContextSize(extension_settings.statTracker.overrideResponseLength);
     const chat = context.chat;
     const allMessages = chat.filter(m => !m.is_system && m.mes).map(m => m.mes);
     const messagesWordCount = allMessages.map(m => extractAllWords(m)).flat().length;
     const messagesTokenCount = await getTokenCountAsync(allMessages.join('\n'));
     const tokensPerWord = messagesTokenCount / messagesWordCount;
     const averageMessageTokenCount = messagesTokenCount / allMessages.length;
-    const targetSummaryTokens = Math.round(extension_settings.memory.promptWords * tokensPerWord);
-    const promptTokens = await getTokenCountAsync(extension_settings.memory.prompt);
+    const targetSummaryTokens = Math.round(extension_settings.statTracker.promptWords * tokensPerWord);
+    const promptTokens = await getTokenCountAsync(extension_settings.statTracker.prompt);
     const promptAllowance = maxPromptLength - promptTokens - targetSummaryTokens;
-    const maxMessagesPerSummary = extension_settings.memory.maxMessagesPerRequest || 0;
+    const maxMessagesPerSummary = extension_settings.statTracker.maxMessagesPerRequest || 0;
     const averageMessagesPerPrompt = Math.floor(promptAllowance / averageMessageTokenCount);
     const targetMessagesInPrompt = maxMessagesPerSummary > 0 ? maxMessagesPerSummary : Math.max(0, averageMessagesPerPrompt);
     const adjustedAverageMessagesPerPrompt = targetMessagesInPrompt + (averageMessagesPerPrompt - targetMessagesInPrompt) / 4;
@@ -190,34 +193,34 @@ async function onPromptIntervalAutoClick() {
     });
 
     const ROUNDING = 5;
-    extension_settings.memory.promptInterval = Math.max(1, Math.floor(adjustedAverageMessagesPerPrompt / ROUNDING) * ROUNDING);
+    extension_settings.statTracker.promptInterval = Math.max(1, Math.floor(adjustedAverageMessagesPerPrompt / ROUNDING) * ROUNDING);
 
-    $('#memory_prompt_interval').val(extension_settings.memory.promptInterval).trigger('input');
+    $('#memory_prompt_interval').val(extension_settings.statTracker.promptInterval).trigger('input');
 }
 
 function onMemoryFrozenInput() {
     const value = Boolean($(this).prop('checked'));
-    extension_settings.memory.memoryFrozen = value;
+    extension_settings.statTracker.memoryFrozen = value;
     saveSettingsDebounced();
 }
 
 function onMemorySkipWIANInput() {
     const value = Boolean($(this).prop('checked'));
-    extension_settings.memory.SkipWIAN = value;
+    extension_settings.statTracker.SkipWIAN = value;
     saveSettingsDebounced();
 }
 
 function onMemoryPromptWordsInput() {
     const value = $(this).val();
-    extension_settings.memory.promptWords = Number(value);
-    $('#memory_prompt_words_value').text(extension_settings.memory.promptWords);
+    extension_settings.statTracker.promptWords = Number(value);
+    $('#memory_prompt_words_value').text(extension_settings.statTracker.promptWords);
     saveSettingsDebounced();
 }
 
 function onMemoryPromptIntervalInput() {
     const value = $(this).val();
-    extension_settings.memory.promptInterval = Number(value);
-    $('#memory_prompt_interval_value').text(extension_settings.memory.promptInterval);
+    extension_settings.statTracker.promptInterval = Number(value);
+    $('#memory_prompt_interval_value').text(extension_settings.statTracker.promptInterval);
     saveSettingsDebounced();
 }
 
@@ -227,56 +230,56 @@ function onMemoryPromptRestoreClick() {
 
 function onMemoryPromptInput() {
     const value = $(this).val();
-    extension_settings.memory.prompt = value;
+    extension_settings.statTracker.prompt = value;
     saveSettingsDebounced();
 }
 
 function onMemoryTemplateInput() {
     const value = $(this).val();
-    extension_settings.memory.template = value;
+    extension_settings.statTracker.template = value;
     reinsertMemory();
     saveSettingsDebounced();
 }
 
 function onMemoryDepthInput() {
     const value = $(this).val();
-    extension_settings.memory.depth = Number(value);
+    extension_settings.statTracker.depth = Number(value);
     reinsertMemory();
     saveSettingsDebounced();
 }
 
 function onMemoryRoleInput() {
     const value = $(this).val();
-    extension_settings.memory.role = Number(value);
+    extension_settings.statTracker.role = Number(value);
     reinsertMemory();
     saveSettingsDebounced();
 }
 
 function onMemoryPositionChange(e) {
     const value = e.target.value;
-    extension_settings.memory.position = value;
+    extension_settings.statTracker.position = value;
     reinsertMemory();
     saveSettingsDebounced();
 }
 
 function onMemoryPromptWordsForceInput() {
     const value = $(this).val();
-    extension_settings.memory.promptForceWords = Number(value);
-    $('#memory_prompt_words_force_value').text(extension_settings.memory.promptForceWords);
+    extension_settings.statTracker.promptForceWords = Number(value);
+    $('#memory_prompt_words_force_value').text(extension_settings.statTracker.promptForceWords);
     saveSettingsDebounced();
 }
 
 function onOverrideResponseLengthInput() {
     const value = $(this).val();
-    extension_settings.memory.overrideResponseLength = Number(value);
-    $('#memory_override_response_length_value').text(extension_settings.memory.overrideResponseLength);
+    extension_settings.statTracker.overrideResponseLength = Number(value);
+    $('#memory_override_response_length_value').text(extension_settings.statTracker.overrideResponseLength);
     saveSettingsDebounced();
 }
 
 function onMaxMessagesPerRequestInput() {
     const value = $(this).val();
-    extension_settings.memory.maxMessagesPerRequest = Number(value);
-    $('#memory_max_messages_per_request_value').text(extension_settings.memory.maxMessagesPerRequest);
+    extension_settings.statTracker.maxMessagesPerRequest = Number(value);
+    $('#memory_max_messages_per_request_value').text(extension_settings.statTracker.maxMessagesPerRequest);
     saveSettingsDebounced();
 }
 
@@ -296,8 +299,8 @@ function getLatestMemoryFromChat(chat) {
 
     for (let i = chat.length - 2; i >= 0; i--) { // start from second to last element
         const mes = chat[i];
-        if (mes.extra && mes.extra.memory) {
-            return mes.extra.memory;
+        if (mes.extra && mes.extra.statTracker) {
+            return mes.extra.statTracker;
         }
     }
 
@@ -311,7 +314,7 @@ function getIndexOfLatestChatSummary(chat) {
 
     for (let i = chat.length - 2; i >= 0; i--) {
         const mes = chat[i];
-        if (mes.extra && mes.extra.memory) {
+        if (mes.extra && mes.extra.statTracker) {
             return chat.indexOf(mes);
         }
     }
@@ -342,7 +345,7 @@ async function onChatEvent() {
     }
 
     // Currently summarizing or frozen state - skip
-    if (inApiCall || extension_settings.memory.memoryFrozen) {
+    if (inApiCall || extension_settings.statTracker.memoryFrozen) {
         return;
     }
 
@@ -360,10 +363,10 @@ async function onChatEvent() {
     // Message has been edited / regenerated - delete the saved memory
     if (chat.length
         && chat[chat.length - 1].extra
-        && chat[chat.length - 1].extra.memory
+        && chat[chat.length - 1].extra.statTracker
         && lastMessageId === chat.length
         && getStringHash(chat[chat.length - 1].mes) !== lastMessageHash) {
-        delete chat[chat.length - 1].extra.memory;
+        delete chat[chat.length - 1].extra.statTracker;
     }
 
     try {
@@ -380,7 +383,7 @@ async function onChatEvent() {
 async function forceSummarizeChat() {
     const context = getContext();
 
-    const skipWIAN = extension_settings.memory.SkipWIAN;
+    const skipWIAN = extension_settings.statTracker.SkipWIAN;
     console.log(`Skipping WIAN? ${skipWIAN}`);
     if (!context.chatId) {
         toastr.warning('No chat selected');
@@ -411,10 +414,10 @@ async function summarizeCallback(args, text) {
         return await forceSummarizeChat();
     }
 
-    const prompt = substituteParams((resolveVariable(args.prompt) || extension_settings.memory.prompt)?.replace(/{{words}}/gi, extension_settings.memory.promptWords));
+    const prompt = substituteParams((resolveVariable(args.prompt) || extension_settings.statTracker.prompt)?.replace(/{{words}}/gi, extension_settings.statTracker.promptWords));
 
     try {
-        return await generateRaw(text, '', false, false, prompt, extension_settings.memory.overrideResponseLength);
+        return await generateRaw(text, '', false, false, prompt, extension_settings.statTracker.overrideResponseLength);
     } catch (error) {
         toastr.error(String(error), 'Failed to summarize text');
         console.log(error);
@@ -423,13 +426,13 @@ async function summarizeCallback(args, text) {
 }
 
 async function summarizeChat(context) {
-    const skipWIAN = extension_settings.memory.SkipWIAN;
+    const skipWIAN = extension_settings.statTracker.SkipWIAN;
     await summarizeChatMain(context, false, skipWIAN);
 }
 
 async function summarizeChatMain(context, force, skipWIAN) {
 
-    if (extension_settings.memory.promptInterval === 0 && !force) {
+    if (extension_settings.statTracker.promptInterval === 0 && !force) {
         console.debug('Prompt interval is set to 0, skipping summarization');
         return;
     }
@@ -451,8 +454,8 @@ async function summarizeChatMain(context, force, skipWIAN) {
         return;
     }
 
-    if (context.chat.length < extension_settings.memory.promptInterval && !force) {
-        console.debug(`Not enough messages in chat to summarize (chat: ${context.chat.length}, interval: ${extension_settings.memory.promptInterval})`);
+    if (context.chat.length < extension_settings.statTracker.promptInterval && !force) {
+        console.debug(`Not enough messages in chat to summarize (chat: ${context.chat.length}, interval: ${extension_settings.statTracker.promptInterval})`);
         return;
     }
 
@@ -460,28 +463,28 @@ async function summarizeChatMain(context, force, skipWIAN) {
     let wordsSinceLastSummary = 0;
     let conditionSatisfied = false;
     for (let i = context.chat.length - 1; i >= 0; i--) {
-        if (context.chat[i].extra && context.chat[i].extra.memory) {
+        if (context.chat[i].extra && context.chat[i].extra.statTracker) {
             break;
         }
         messagesSinceLastSummary++;
         wordsSinceLastSummary += extractAllWords(context.chat[i].mes).length;
     }
 
-    if (messagesSinceLastSummary >= extension_settings.memory.promptInterval) {
+    if (messagesSinceLastSummary >= extension_settings.statTracker.promptInterval) {
         conditionSatisfied = true;
     }
 
-    if (extension_settings.memory.promptForceWords && wordsSinceLastSummary >= extension_settings.memory.promptForceWords) {
+    if (extension_settings.statTracker.promptForceWords && wordsSinceLastSummary >= extension_settings.statTracker.promptForceWords) {
         conditionSatisfied = true;
     }
 
     if (!conditionSatisfied && !force) {
-        console.debug(`Summary conditions not satisfied (messages: ${messagesSinceLastSummary}, interval: ${extension_settings.memory.promptInterval}, words: ${wordsSinceLastSummary}, force words: ${extension_settings.memory.promptForceWords})`);
+        console.debug(`Summary conditions not satisfied (messages: ${messagesSinceLastSummary}, interval: ${extension_settings.statTracker.promptInterval}, words: ${wordsSinceLastSummary}, force words: ${extension_settings.statTracker.promptForceWords})`);
         return;
     }
 
     console.log('Summarizing chat, messages since last summary: ' + messagesSinceLastSummary, 'words since last summary: ' + wordsSinceLastSummary);
-    const prompt = extension_settings.memory.prompt?.replace(/{{words}}/gi, extension_settings.memory.promptWords);
+    const prompt = extension_settings.statTracker.prompt?.replace(/{{words}}/gi, extension_settings.statTracker.promptWords);
 
     if (!prompt) {
         console.debug('Summarization prompt is empty. Skipping summarization.');
@@ -492,12 +495,12 @@ async function summarizeChatMain(context, force, skipWIAN) {
     let summary = '';
     let index = null;
 
-    if (prompt_builders.DEFAULT === extension_settings.memory.prompt_builder) {
-        summary = await generateQuietPrompt(prompt, false, skipWIAN, '', '', extension_settings.memory.overrideResponseLength);
+    if (prompt_builders.DEFAULT === extension_settings.statTracker.prompt_builder) {
+        summary = await generateQuietPrompt(prompt, false, skipWIAN, '', '', extension_settings.statTracker.overrideResponseLength);
     }
 
-    if ([prompt_builders.RAW_BLOCKING, prompt_builders.RAW_NON_BLOCKING].includes(extension_settings.memory.prompt_builder)) {
-        const lock = extension_settings.memory.prompt_builder === prompt_builders.RAW_BLOCKING;
+    if ([prompt_builders.RAW_BLOCKING, prompt_builders.RAW_NON_BLOCKING].includes(extension_settings.statTracker.prompt_builder)) {
+        const lock = extension_settings.statTracker.prompt_builder === prompt_builders.RAW_BLOCKING;
         try {
             if (lock) {
                 deactivateSendButtons();
@@ -513,7 +516,7 @@ async function summarizeChatMain(context, force, skipWIAN) {
                 return null;
             }
 
-            summary = await generateRaw(rawPrompt, '', false, false, prompt, extension_settings.memory.overrideResponseLength);
+            summary = await generateRaw(rawPrompt, '', false, false, prompt, extension_settings.statTracker.overrideResponseLength);
             index = lastUsedIndex;
         } finally {
             if (lock) {
@@ -572,7 +575,7 @@ async function getRawSummaryPrompt(context, prompt) {
     chat.pop(); // We always exclude the last message from the buffer
     const chatBuffer = [];
     const PADDING = 64;
-    const PROMPT_SIZE = getMaxContextSize(extension_settings.memory.overrideResponseLength);
+    const PROMPT_SIZE = getMaxContextSize(extension_settings.statTracker.overrideResponseLength);
     let latestUsedMessage = null;
 
     for (let index = latestSummaryIndex + 1; index < chat.length; index++) {
@@ -598,7 +601,7 @@ async function getRawSummaryPrompt(context, prompt) {
 
         latestUsedMessage = message;
 
-        if (extension_settings.memory.maxMessagesPerRequest > 0 && chatBuffer.length >= extension_settings.memory.maxMessagesPerRequest) {
+        if (extension_settings.statTracker.maxMessagesPerRequest > 0 && chatBuffer.length >= extension_settings.statTracker.maxMessagesPerRequest) {
             break;
         }
     }
@@ -614,8 +617,8 @@ function onMemoryRestoreClick() {
 
     for (let i = context.chat.length - 2; i >= 0; i--) {
         const mes = context.chat[i];
-        if (mes.extra && mes.extra.memory == content) {
-            delete mes.extra.memory;
+        if (mes.extra && mes.extra.statTracker == content) {
+            delete mes.extra.statTracker;
             break;
         }
     }
@@ -631,7 +634,7 @@ function onMemoryContentInput() {
 
 function onMemoryPromptBuilderInput(e) {
     const value = Number(e.target.value);
-    extension_settings.memory.prompt_builder = value;
+    extension_settings.statTracker.prompt_builder = value;
     saveSettingsDebounced();
 }
 
@@ -648,9 +651,9 @@ function reinsertMemory() {
  */
 function setMemoryContext(value, saveToMessage, index = null) {
     const context = getContext();
-    context.setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_settings.memory.position, extension_settings.memory.depth, false, extension_settings.memory.role);
+    context.setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_settings.statTracker.position, extension_settings.statTracker.depth, false, extension_settings.statTracker.role);
     $('#memory_contents').val(value);
-    console.log('Summary set to: ' + value, 'Position: ' + extension_settings.memory.position, 'Depth: ' + extension_settings.memory.depth, 'Role: ' + extension_settings.memory.role);
+    console.log('Summary set to: ' + value, 'Position: ' + extension_settings.statTracker.position, 'Depth: ' + extension_settings.statTracker.depth, 'Role: ' + extension_settings.statTracker.role);
 
     if (saveToMessage && context.chat.length) {
         const idx = index ?? context.chat.length - 2;
@@ -660,7 +663,7 @@ function setMemoryContext(value, saveToMessage, index = null) {
             mes.extra = {};
         }
 
-        mes.extra.memory = value;
+        mes.extra.statTracker = value;
         saveChatDebounced();
     }
 }
