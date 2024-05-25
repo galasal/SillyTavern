@@ -294,9 +294,8 @@ function getLatestMemoryFromChat(chat) {
         return '';
     }
 
-    const reversedChat = chat.slice().reverse();
-    reversedChat.shift();
-    for (let mes of reversedChat) {
+    for (let i = chat.length - 2; i >= 0; i--) { // start from second to last element
+        const mes = chat[i];
         if (mes.extra && mes.extra.memory) {
             return mes.extra.memory;
         }
@@ -310,9 +309,8 @@ function getIndexOfLatestChatSummary(chat) {
         return -1;
     }
 
-    const reversedChat = chat.slice().reverse();
-    reversedChat.shift();
-    for (let mes of reversedChat) {
+    for (let i = chat.length - 2; i >= 0; i--) {
+        const mes = chat[i];
         if (mes.extra && mes.extra.memory) {
             return chat.indexOf(mes);
         }
@@ -613,10 +611,9 @@ async function getRawSummaryPrompt(context, prompt) {
 function onMemoryRestoreClick() {
     const context = getContext();
     const content = $('#memory_contents').val();
-    const reversedChat = context.chat.slice().reverse();
-    reversedChat.shift();
 
-    for (let mes of reversedChat) {
+    for (let i = context.chat.length - 2; i >= 0; i--) {
+        const mes = context.chat[i];
         if (mes.extra && mes.extra.memory == content) {
             delete mes.extra.memory;
             break;
